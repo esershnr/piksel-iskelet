@@ -31,6 +31,7 @@ Tones come from the mannequin letters, so light and shade stay consistent across
 node tools/preview.ts out                       # mannequin: GIF (x8, scrolling ground), strip (x6), 1x sheet
 node tools/skin-preview.ts isci                 # a skin on every animation -> out/skins/isci/
 node tools/aseprite-export.ts isci              # .aseprite with walk_right/left, idle_right/left... tags
+node tools/grids.ts                             # mannequin head/torso grids per facing + limb UV ranges (for skins)
 node tools/compare-siteyard.ts ../siteyard      # Siteyard v1 walk next to the skeleton's walk
 ```
 
