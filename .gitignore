@@ -1,0 +1,13 @@
+node_modules/
+dist/
+out/
+*.log
+.env*
+
+# Third-party reference assets (licenses forbid redistribution)
+hazir_charsheet/
+
+# Fan-art test skins of third-party characters (personal only)
+src/skin/skins/jak.ts
+src/skin/skins/aang.ts
+src/skin/skins/naruto.ts
