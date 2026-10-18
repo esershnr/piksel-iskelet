@@ -94,25 +94,52 @@ export function paint(s: Sprite, fill: Fill, opts: PaintOptions = {}): void {
   }
 }
 
+export interface CleanOptions {
+  /** Keep an outline pixel that continues an outline on both sides along a row or a column: it is the
+   * silhouette's edge where a near limb's outline took over the fill beside it (a hand at the torso's
+   * front), and dropping it notches the edge, leaving the row below (the belt) sticking out. Off for
+   * the locked walk and idle, which were approved with those notches. */
+  keepRuns?: boolean;
+}
+
 /**
  * Drops outline pixels that no longer touch any fill (4-neighbours): leftovers of a part that is now
  * hidden behind another, which otherwise show up as doubled outlines.
  */
-export function cleanOutlines(s: Sprite): void {
-  const drop: number[] = [];
+export function cleanOutlines(s: Sprite, opts: CleanOptions = {}): void {
+  const loose = new Set<number>();
   for (let y = 0; y < s.h; y++)
     for (let x = 0; x < s.w; x++) {
       if (s.get(x, y) !== OUTLINE) continue;
-      const touches = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => {
-        const n = s.get(x + dx!, y + dy!);
-        return n !== EMPTY && n !== OUTLINE;
-      });
-      if (!touches) drop.push(y * s.w + x);
+      const around = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => s.get(x + dx!, y + dy!));
+      const touches = around.some((n) => n !== EMPTY && n !== OUTLINE);
+      // An enclosed one stays: dropping it would punch a hole into the silhouette (a prop's corner
+      // against the head).
+      const enclosed = around.every((n) => n !== EMPTY);
+      if (!touches && !enclosed) loose.add(y * s.w + x);
     }
+  // A loose one between two outline pixels that stay, along a row or a column (CleanOptions.keepRuns).
+  const stays = (x: number, y: number): boolean => s.get(x, y) === OUTLINE && !loose.has(y * s.w + x);
+  const run = (i: number): boolean => {
+    const x = i % s.w;
+    const y = (i - x) / s.w;
+    return (stays(x - 1, y) && stays(x + 1, y)) || (stays(x, y - 1) && stays(x, y + 1));
+  };
+  const drop = [...loose].filter((i) => !(opts.keepRuns && run(i)));
   for (const i of drop) {
     s.px[i] = EMPTY;
     s.info[i] = null;
   }
+  // A background pixel enclosed on four sides (an arm's corner against the chin) is a pinhole: close it.
+  for (let y = 0; y < s.h; y++)
+    for (let x = 0; x < s.w; x++) {
+      if (s.get(x, y) !== EMPTY) continue;
+      const around = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => [x + dx!, y + dy!] as const);
+      if (!around.every(([nx, ny]) => s.inside(nx, ny) && s.get(nx, ny) !== EMPTY)) continue;
+      const part = around.map(([nx, ny]) => s.at(nx, ny)?.part).find((p): p is string => !!p) ?? "torso";
+      s.px[y * s.w + x] = OUTLINE;
+      s.info[y * s.w + x] = { ch: OUTLINE, part, u: -1, v: -1 };
+    }
 }
 
 /** Fill from a text grid ('.' skipped) placed at (x, y); u, v are the grid's own column and row. */

@@ -11,7 +11,8 @@
 // Overlays add what leaves the body silhouette (hair volume, hats, tools), anchored to a part.
 
 import type { Sprite } from "../sprite.ts";
-import { hex, type RGB } from "../palette.ts";
+import { hex, MISSING, type RGB } from "../palette.ts";
+import { isPropPart, PROP_LETTERS, PROP_MATERIALS } from "../props.ts";
 
 export type Facing = "side" | "down" | "up";
 
@@ -54,6 +55,9 @@ export interface Skin {
   arm: string[];
   leg: string[];
   overlays?: Overlay[];
+  /** Prop materials this skin overrides (props.ts PROP_MATERIALS has the defaults): a foreman's red
+   * clipboard, a tea glass with a gold rim. */
+  props?: Record<string, Ramp>;
 }
 
 // Tone of each mannequin letter. Far limbs sit one step darker than the near ones.
@@ -71,10 +75,26 @@ export interface Picture {
   px: (RGB | null)[];
 }
 
-function color(skin: Skin, material: string, tone: number): RGB {
-  const m = skin.materials[material];
-  if (m === undefined) return [255, 0, 255];
-  return hex(typeof m === "string" ? m : m[Math.max(0, Math.min(3, tone))]!);
+/** A frame resolved to anything per pixel (a color, a palette symbol), null where transparent. */
+interface Canvas<T> {
+  w: number;
+  h: number;
+  px: (T | null)[];
+}
+
+/** How a resolved ramp entry becomes a pixel value: `dress` parses hex colors, `dressSymbols` keeps the
+ * entry itself (a palette letter). `missing` marks an unknown material. */
+interface Pick<T> {
+  entry: (e: string) => T;
+  missing: T;
+}
+
+/** The ramp entry for a tone (a flat material fills every tone). */
+const toneOf = (r: Ramp, tone: number): string => (typeof r === "string" ? r : r[Math.max(0, Math.min(3, tone))]!);
+
+function material<T>(skin: Skin, pick: Pick<T>, key: string, tone: number): T {
+  const m = skin.materials[key];
+  return m === undefined ? pick.missing : pick.entry(toneOf(m, tone));
 }
 
 function textureKey(t: PartTexture, facing: Facing, u: number, v: number): string {
@@ -97,32 +117,61 @@ function origin(s: Sprite, part: string): { x: number; y: number } | null {
   return null;
 }
 
-/** Dresses one mannequin frame. Side frames face right; mirror the picture for facing left. */
-export function dress(s: Sprite, skin: Skin, facing: Facing): Picture {
-  const out = skin.outline;
-  const px: (RGB | null)[] = s.info.map((p) => {
+/** The one lookup behind `dress` and `dressSymbols`: part textures, limb strips, prop materials and
+ * overlays, with every ramp entry turned into a pixel value by `pick`. */
+function resolve<T>(s: Sprite, skin: Skin, facing: Facing, pick: Pick<T>): Canvas<T> {
+  const out = pick.entry(skin.outline);
+  const px: (T | null)[] = s.info.map((p) => {
     if (!p) return null;
     // Generated outlines carry u = -1; eye pixels are outline letters inside a grid (u >= 0).
-    if (p.u < 0) return hex(out);
+    if (p.u < 0) return out;
+    if (p.ch === "e") return out; // the mannequin's eyes and prop lines; a skin draws other eyes with an overlay
+    if (isPropPart(p.part)) {
+      // Props color by material: the skin's override if it has one, else the material's default.
+      const entry = PROP_LETTERS[p.ch];
+      if (!entry) return pick.missing;
+      const [name, tone] = entry;
+      const ramp = skin.props?.[name] ?? PROP_MATERIALS[name];
+      if (ramp === undefined) return pick.missing;
+      return pick.entry(typeof ramp === "string" ? ramp : ramp[tone]!);
+    }
     let key: string;
     if (p.part === "head") key = textureKey(skin.head, facing, p.u, p.v);
     else if (p.part === "torso") key = textureKey(skin.torso, facing, p.u, p.v);
     else if (p.part === "arm") key = stripKey(skin.arm, p.u, p.v);
     else if (p.part === "leg") key = stripKey(skin.leg, p.u, p.v);
     else key = "?";
-    if (p.ch === "e") return hex(out); // the mannequin's eyes; a skin draws other eyes with an overlay
-    return color(skin, key, TONE[p.ch] ?? 1);
+    return material(skin, pick, key, TONE[p.ch] ?? 1);
   });
-  const pic: Picture = { w: s.w, h: s.h, px };
-  for (const o of skin.overlays ?? []) paintOverlay(pic, s, skin, o, facing);
-  return pic;
+  const c: Canvas<T> = { w: s.w, h: s.h, px };
+  for (const o of skin.overlays ?? []) paintOverlay(c, s, skin, o, facing, pick);
+  return c;
 }
 
-function paintOverlay(pic: Picture, s: Sprite, skin: Skin, o: Overlay, facing: Facing): void {
+const COLORS: Pick<RGB> = { entry: hex, missing: MISSING };
+
+/** Dresses one mannequin frame. Side frames face right; mirror the picture for facing left. */
+export function dress(s: Sprite, skin: Skin, facing: Facing): Picture {
+  return resolve(s, skin, facing, COLORS);
+}
+
+/**
+ * Dresses one mannequin frame into palette symbols: a skin whose ramps hold one-character symbols (a
+ * game's palette letters, e.g. skins/siteyard.ts) yields the frame as text rows, '.' transparent and
+ * every outline (the mannequin's eyes and mouth included) "e". Unknown materials show as '?'.
+ */
+export function dressSymbols(s: Sprite, skin: Skin, facing: Facing): string[] {
+  const c = resolve(s, { ...skin, outline: "e" }, facing, { entry: (e) => e, missing: "?" });
+  const rows: string[] = [];
+  for (let y = 0; y < c.h; y++) rows.push(c.px.slice(y * c.w, (y + 1) * c.w).map((ch) => ch ?? ".").join(""));
+  return rows;
+}
+
+function paintOverlay<T>(pic: Canvas<T>, s: Sprite, skin: Skin, o: Overlay, facing: Facing, pick: Pick<T>): void {
   const place = o[facing];
   const at = origin(s, o.anchor);
   if (!place || !at) return;
-  const fill = new Map<number, RGB>();
+  const fill = new Map<number, T>();
   place.rows.forEach((row, ry) =>
     [...row].forEach((ch, rx) => {
       const x = at.x + place.x + rx;
@@ -133,13 +182,14 @@ function paintOverlay(pic: Picture, s: Sprite, skin: Skin, o: Overlay, facing: F
         return;
       }
       const entry = o.legend[ch];
-      if (entry) fill.set(y * pic.w + x, color(skin, entry[0], entry[1]));
+      if (entry) fill.set(y * pic.w + x, material(skin, pick, entry[0], entry[1]));
     }),
   );
-  const free = (i: number): boolean => o.z === "front" || pic.px[i] === null;
+  // A prop drawn over the body (a raised hammer in front of the hat) stays over the overlay too.
+  const free = (i: number): boolean => (o.z === "front" || pic.px[i] === null) && !isPropPart(s.info[i]?.part ?? "");
   for (const [i, c] of fill) if (free(i)) pic.px[i] = c;
   if (o.outline === false) return;
-  const line = hex(skin.outline);
+  const line = pick.entry(skin.outline);
   for (const i of fill.keys()) {
     const x = i % pic.w;
     const y = (i - x) / pic.w;
@@ -159,8 +209,14 @@ export function mirrorPicture(p: Picture): Picture {
   return { w: p.w, h: p.h, px };
 }
 
-/** Loads `src/skin/skins/<name>.ts` and returns the skin it exports. */
+/** Loads `src/skin/skins/<name>.ts` and returns the skin it exports; `<role>:<tone>` is a role skin
+ * (skins/roles.ts). */
 export async function loadSkin(name: string): Promise<Skin> {
+  const role = /^([a-z_]+):(light|mid|dark)$/.exec(name);
+  if (role) {
+    const mod = await import("./skins/roles.ts");
+    return mod.roleSkin(role[1]!, role[2] as "light" | "mid" | "dark");
+  }
   if (!/^[a-z0-9_-]+$/.test(name)) throw new Error(`bad skin name: ${name}`);
   const mod: Record<string, unknown> = await import(`./skins/${name}.ts`);
   const skin = Object.values(mod).find((v): v is Skin => typeof v === "object" && v !== null && "materials" in v);

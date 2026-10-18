@@ -71,3 +71,35 @@ export function leg(hip: Pt, dx: number, lift: number, stamp: FootStamp, l: LegL
 }
 
 export const isLeg = (ch: string): boolean => "LlKkFJ".includes(ch);
+
+/** A face: the eyes open (default), shut (sleeping, drinking) or looking down (reading, typing), the
+ * mouth open (talking). The eyes are the outline pixels of the head grid, so a skin never touches them. */
+export interface Face {
+  eyes?: "open" | "shut" | "down";
+  mouth?: "open";
+}
+
+/**
+ * The head grid with a face applied: a shut eye keeps only the bottom pixel of each eye column, eyes
+ * looking down move each eye column one row down, an open mouth is two outline pixels under the eyes
+ * at the front of the face (`mouth` names the grid cells). The back of the head has no face.
+ */
+export function faceGrid(head: string[], face: Face | undefined, mouth: [number, number][]): string[] {
+  if (!face || (face.eyes === undefined && !face.mouth)) return head;
+  const g = head.map((r) => [...r]);
+  const eyes: [number, number][] = [];
+  g.forEach((row, v) => row.forEach((ch, u) => ch === "e" && eyes.push([u, v])));
+  const columns = new Map<number, number[]>();
+  for (const [u, v] of eyes) columns.set(u, [...(columns.get(u) ?? []), v]);
+  for (const [u, vs] of columns) {
+    const top = Math.min(...vs);
+    const bottom = Math.max(...vs);
+    if (face.eyes === "shut") for (const v of vs) if (v !== bottom) g[v]![u] = "H";
+    if (face.eyes === "down") {
+      g[top]![u] = "H";
+      g[bottom + 1]![u] = "e";
+    }
+  }
+  if (face.mouth === "open") for (const [u, v] of mouth) g[v]![u] = "e";
+  return g.map((r) => r.join(""));
+}

@@ -1,6 +1,8 @@
 // Letter -> color maps. A palette is the simplest skin: the mannequin palette shows the skeleton as a
 // grey figure, the part map gives every body part its own hue so overlaps and limb order are readable.
 
+import { PROP_LETTERS, PROP_MATERIALS } from "./props.ts";
+
 export type RGB = [number, number, number];
 export type Palette = Record<string, RGB>;
 
@@ -54,3 +56,17 @@ export const PART_MAP: Palette = {
 };
 
 export const MISSING: RGB = [255, 0, 255];
+
+// Prop letters (props.ts) join both palettes: the mannequin shows a prop in its material's default
+// colors pulled most of the way toward grey, so a hammer head still reads against its handle; the part
+// map gives every prop one orange so props stand apart from the body.
+const mix = (a: RGB, b: RGB, k: number): RGB => [0, 1, 2].map((i) => Math.round(a[i]! + (b[i]! - a[i]!) * k)) as RGB;
+const materialColor = (material: string, tone: number): RGB => {
+  const m = PROP_MATERIALS[material] ?? "#ff00ff";
+  return hex(typeof m === "string" ? m : m[tone]!);
+};
+const PROP_ORANGE: RGB[] = [hex("#ffc08a"), hex("#f08c3c"), hex("#c2642a"), hex("#8a4319")];
+for (const [ch, [material, tone]] of Object.entries(PROP_LETTERS)) {
+  MANNEQUIN[ch] = mix(materialColor(material, tone), [165, 158, 150], 0.55);
+  PART_MAP[ch] = PROP_ORANGE[tone]!;
+}

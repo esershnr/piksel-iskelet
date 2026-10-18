@@ -65,9 +65,14 @@ export function stroke(fill: Fill, w: number, h: number, a: Pt, b: Pt, width: nu
 
 /** Re-letters the pixels of `fill` whose right neighbour is outside it (shade side, light from the left). */
 export function shadeRight(fill: Fill, w: number, from: string, to: string): void {
+  shadeEdge(fill, w, from, to, 1);
+}
+
+/** Re-letters the pixels of `fill` whose neighbour `dx` columns over (+1 right, -1 left) is outside it. */
+export function shadeEdge(fill: Fill, w: number, from: string, to: string, dx: 1 | -1): void {
   for (const [i, p] of fill) {
     if (p.ch !== from) continue;
     const x = i % w;
-    if (x === w - 1 || !fill.has(i + 1)) fill.set(i, { ...p, ch: to });
+    if (x + dx < 0 || x + dx >= w || !fill.has(i + dx)) fill.set(i, { ...p, ch: to });
   }
 }
