@@ -8,7 +8,7 @@ import { encodeGif } from "../src/gif.ts";
 import { hex, type RGB } from "../src/palette.ts";
 import { encodePng } from "../src/png.ts";
 import { dress, loadSkin, mirrorPicture, type Facing, type Picture } from "../src/skin/skin.ts";
-import { ANIMS, H, W } from "../src/templates/chibi24x32/index.ts";
+import { ANIMS, facingOf, H, W } from "../src/templates/chibi24x32/index.ts";
 
 const skin = await loadSkin(process.argv[2] ?? "");
 const outDir = process.argv[3] ?? join("out", "skins", skin.name);
@@ -17,11 +17,6 @@ mkdirSync(outDir, { recursive: true });
 
 const BG = hex("#e8e2d6");
 const GROUND = hex("#c2b59e");
-
-function facingOf(name: string): Facing {
-  const f = name.split("_").pop();
-  return f === "down" || f === "up" ? f : "side";
-}
 
 /** Pictures laid out in rows on the background, scaled. */
 function board(rows: Picture[][], scale: number, ground: boolean): { w: number; h: number; px: RGB[] } {
@@ -76,7 +71,7 @@ function gif(frames: { w: number; h: number; px: RGB[] }[], delay: number): Buff
 
 for (const a of ANIMS) {
   if (only.length && !only.includes(a.name)) continue;
-  const facing = facingOf(a.name);
+  const facing: Facing = facingOf(a);
   const pics = a.frames().map((s) => dress(s, skin, facing));
   const rows = facing === "side" ? [pics, pics.map(mirrorPicture)] : [pics];
   writeFileSync(join(outDir, `${a.name}_strip.png`), png(board(rows, 6, false)));

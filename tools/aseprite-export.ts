@@ -10,7 +10,7 @@ import { MANNEQUIN, MISSING, type RGB } from "../src/palette.ts";
 import { encodePng } from "../src/png.ts";
 import { dress, loadSkin, mirrorPicture, type Facing, type Picture } from "../src/skin/skin.ts";
 import type { Sprite } from "../src/sprite.ts";
-import { ANIMS, H, W } from "../src/templates/chibi24x32/index.ts";
+import { ANIMS, facingOf, H, W } from "../src/templates/chibi24x32/index.ts";
 
 const ASEPRITE_CANDIDATES = [
   process.env.ASEPRITE,
@@ -23,11 +23,6 @@ const skin = name === "mannequin" ? null : await loadSkin(name);
 const out = resolve(process.argv[3] ?? join("out", "aseprite", `${name}.aseprite`));
 const work = join(dirname(out), `${name}_frames`);
 mkdirSync(work, { recursive: true });
-
-const facingOf = (anim: string): Facing => {
-  const f = anim.split("_").pop();
-  return f === "down" || f === "up" ? f : "side";
-};
 
 const picture = (s: Sprite, facing: Facing): Picture =>
   skin ? dress(s, skin, facing) : { w: s.w, h: s.h, px: s.px.map((ch): RGB | null => (ch === "." ? null : (MANNEQUIN[ch] ?? MISSING))) };
@@ -44,7 +39,7 @@ function writePng(p: Picture, path: string): void {
 const tags: { name: string; from: number; to: number; delay: number }[] = [];
 const files: string[] = [];
 for (const a of ANIMS) {
-  const facing = facingOf(a.name);
+  const facing: Facing = facingOf(a);
   const pics = a.frames().map((s) => picture(s, facing));
   const variants: [string, Picture[]][] =
     facing === "side"
