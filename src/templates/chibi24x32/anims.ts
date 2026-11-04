@@ -440,3 +440,9 @@ export const WALK_META: Record<string, AnimMeta> = {
 };
 
 export const LOAD_ANIMS: Anim[] = [...walkAnim("carry", CARRY), ...walkAnim("push_cart", PUSH_CART), ...climbAnim()];
+
+/**
+ * push_cart without the cart: the same arms and walk, no prop. Siteyard draws its own map wheelbarrow as
+ * a held layer attached to the pusher, so its export takes these frames; the hands stay on the grips.
+ */
+export const PUSH_CART_BARE: Anim[] = walkAnim("push_cart", { arms: PUSH_CART.arms });

@@ -2,7 +2,8 @@
 // symbolic skin (skins/siteyard.ts) into 24x32 rows of palette letters, with the hat-band rectangle and
 // what Siteyard needs to play it (frames, fps, loop, facings, seated). Side frames face right; Siteyard
 // mirrors them for "left" itself. The sleep zzz is lifted out of the body rows into a `fixed` layer that
-// Siteyard pastes un-mirrored, so the text still reads on a left-facing sleeper. The role looks
+// Siteyard pastes un-mirrored, so the text still reads on a left-facing sleeper. push_cart is exported
+// without the cart: Siteyard draws its map wheelbarrow as a held layer on the pusher. The role looks
 // (skins/roles.ts, in Siteyard's palette letters) go along as SKELETON_ROLES: roles are defined in
 // piksel-iskelet, Siteyard only reads them.
 //   node tools/siteyard-export.ts <siteyardRoot | outFile.ts> [--json]
@@ -14,7 +15,7 @@ import { dirname, join, resolve } from "node:path";
 import { dressSymbols } from "../src/skin/skin.ts";
 import { SITEYARD_ROLES } from "../src/skin/skins/roles.ts";
 import { SITEYARD } from "../src/skin/skins/siteyard.ts";
-import { keyPose, KEY_TABLES, WALK_META, type AnimMeta } from "../src/templates/chibi24x32/anims.ts";
+import { keyPose, KEY_TABLES, PUSH_CART_BARE, WALK_META, type AnimMeta } from "../src/templates/chibi24x32/anims.ts";
 import { ANIMS, facingOf, poseFrame, type Facing } from "../src/templates/chibi24x32/index.ts";
 
 type SyFacing = "down" | "up" | "right" | "left";
@@ -47,7 +48,8 @@ if (!target) {
 }
 const outFile = target.endsWith(".ts") ? resolve(target) : join(resolve(target), "src", "theme", "construction", "sprites", "skeleton.ts");
 
-const byName = new Map(ANIMS.map((a) => [a.name, a]));
+// Siteyard draws the pushed wheelbarrow itself (its map prop as a held layer), so push_cart goes out bare.
+const byName = new Map([...ANIMS, ...PUSH_CART_BARE].map((a) => [a.name, a]));
 const SY: Record<Facing, SyFacing> = { side: "right", down: "down", up: "up" };
 const ALL: Facing[] = ["down", "up", "side"];
 

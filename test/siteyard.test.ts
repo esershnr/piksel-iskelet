@@ -10,6 +10,7 @@ import { PROP_LETTERS } from "../src/props.ts";
 import { dressSymbols } from "../src/skin/skin.ts";
 import { BAND_RECT } from "../src/skin/skins/roles.ts";
 import { SITEYARD } from "../src/skin/skins/siteyard.ts";
+import { PUSH_CART_BARE } from "../src/templates/chibi24x32/anims.ts";
 import { ANIMS, facingOf } from "../src/templates/chibi24x32/index.ts";
 
 /** The keys of PALETTE in siteyard/src/theme/construction/palette.ts (copied; keep in step with it). */
@@ -80,6 +81,29 @@ test("siteyard skin: the pushed wheelbarrow is the map's (green tray, sand load,
       );
       assert.ok(seen.has("g") || seen.has("G"), `${at}: no tray`);
       if (facing !== "up") for (const ch of ["1", "k", "c"]) assert.ok(seen.has(ch), `${at}: no ${ch} (sand, tyre, hub)`);
+    });
+  }
+});
+
+test("siteyard export: push_cart goes out bare, the same walk with no cart", () => {
+  // Siteyard draws its map wheelbarrow as a held layer on the pusher; no cart pixel may remain
+  const carts = new Map(ANIMS.filter((a) => a.name.startsWith("push_cart_")).map((a) => [a.name, a]));
+  assert.equal(PUSH_CART_BARE.length, 3);
+  for (const a of PUSH_CART_BARE) {
+    const withCart = carts.get(a.name)!.frames();
+    a.frames().forEach((s, i) => {
+      const at = `${a.name} bare frame ${i}`;
+      for (let y = 0; y < 32; y++)
+        for (let x = 0; x < 24; x++) assert.ok(s.at(x, y)?.part !== "prop:cart", `${at}: cart at ${x},${y}`);
+      // the body is the cart frame's body: every non-cart pixel is there too, bar the outline that
+      // only bordered the cart
+      const w = withCart[i]!;
+      const rows = dressSymbols(w, SITEYARD, facingOf(a));
+      for (let y = 0; y < 32; y++)
+        for (let x = 0; x < 24; x++) {
+          const p = w.at(x, y);
+          if (p && p.part !== "prop:cart" && rows[y]![x] !== "e") assert.equal(s.at(x, y)?.part, p.part, `${at}: ${x},${y}`);
+        }
     });
   }
 });
