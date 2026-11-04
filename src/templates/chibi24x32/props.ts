@@ -268,27 +268,35 @@ const SPARKS: Prop = {
 // Wheelbarrow, pushed with both hands on the handles, the wheel on the ground; its spokes alternate
 // between two phases ("a", "b") as it rolls. Side: ahead of the body; front: in front of the legs,
 // the wheel between the feet; back: hidden behind the body but for the tray's sides and legs.
-// Side: the 4x4 wheel on the ground ahead under the tray's front, its rim highlight swapping
-// diagonals as it turns; the short rear legs hang off the ground while it is pushed. Front: the tray
-// over the legs, the wheel below it between the feet. Back: only the tray's sides past the hips.
+// Painted like the map's wheelbarrow in Siteyard: a green tray (0 light rim, V body, j shade) heaped
+// with sand (I, X, p), a dark tyre (O) on a steel rim (E) round a bright hub (q); the legs and the
+// front strut stay grey plastic (D).
+// Side: the 4x4 wheel on the ground ahead under the tray's front, the hub swapping diagonals with the
+// rim as it turns; the short rear legs hang off the ground while it is pushed. The tray's lit top edge
+// runs back to the handles, the sand heaped above it. The cart bobs a row up in phase "b" (the walk's
+// rise) and the load settles: its pale crest sits one cell further ahead in "a" (the cell behind it is
+// under the fist), and in "b" the near front leg's top cell is tray shade, the tray's underside.
+// Front: the tray over the legs, the sand heaped in its middle, the wheel below it between the feet.
+// Back: only the tray's sides past the hips.
 const cartSide = (phase: "a" | "b"): PropView => {
-  const [s0, s1] = phase === "a" ? ["D6dD", "Dd6D"] : ["Dd6D", "D6dD"];
+  const [load, leg] = phase === "a" ? ["..IIXXXp.", "D...D...."] : ["..IXXXXp.", "D...j...."];
+  const [s0, s1] = phase === "a" ? ["OqEO", "OEqO"] : ["OEqO", "OqEO"];
   return {
-    rows: ["..1MMMMM.", "WWMMMMMMm", "..mMMMMm.", "...mmmm..", "D...D....", "D...D....", "....DD...", `...${s0}..`, `...${s1}..`, "....DD..."],
+    rows: [load, "WW000000V", "..jVVVVj.", "...jjjj..", leg, "D...D....", "....OO...", `...${s0}..`, `...${s1}..`, "....OO..."],
     grip: { x: 0, y: 1 },
     grip2: { x: 0, y: 1 },
   };
 };
 const cartFront = (phase: "a" | "b"): PropView => {
-  const [w0, w1, w2] = phase === "a" ? ["DdD", "d6d", "DdD"] : ["dDd", "D6D", "dDd"];
+  const [w0, w1, w2] = phase === "a" ? ["OEO", "EqE", "OEO"] : ["EOE", "OqO", "EOE"];
   return {
-    rows: ["W.........W", ".1MMMMMMMM.", "MMMMMMMMMMM", "MMMMMMMMMMm", ".....D.....", `....${w0}....`, `....${w1}....`, `....${w2}....`],
+    rows: ["W.........W", ".000000000.", "000IIXXXpjj", "VVVVVVVVVjj", ".....D.....", `....${w0}....`, `....${w1}....`, `....${w2}....`],
     grip: { x: 0, y: 0 },
     grip2: { x: 10, y: 0 },
   };
 };
 const cartBack = (): PropView => ({
-  rows: ["..W.........W...", "1MMMMMMMMMMMMMMM", "MMMMMMMMMMMMMMMm", "MMMMMMMMMMMMMMMm", "mmmmmmmmmmmmmmmm"],
+  rows: ["..W.........W...", "0VVVVVVVVVVVVVVV", "VVVVVVVVVVVVVVVj", "VVVVVVVVVVVVVVVj", "jjjjjjjjjjjjjjjj"],
   grip: { x: 12, y: 0 },
   grip2: { x: 2, y: 0 },
 });

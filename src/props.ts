@@ -30,9 +30,16 @@ export const PROP_MATERIALS: Record<string, MaterialRamp> = {
   spark: ["#fff6c8", "#ffd34a", "#ff9a2e", "#c9561e"],
   earth: ["#b08a5e", "#86623d", "#5f4429", "#3f2c1a"],
   visor: "#2b5a7c",
+  // The wheelbarrow: a painted steel tray, the sand heaped in it, a rubber tyre on a steel rim.
+  tray: ["#63c74d", "#3e8948", "#265c42", "#1a3f2e"],
+  sand: ["#ead4aa", "#e4a672", "#b86f50", "#8a4e38"],
+  tyre: "#2b2b33",
+  rim: ["#c2ccd8", "#7d8a9c", "#566273", "#3a4351"],
 };
 
-/** Prop letter -> [material, tone]. Digits are the light tone, upper case base, lower case shade. */
+/** Prop letter -> [material, tone]. Digits are the light tone, upper case base, lower case shade. The
+ * body's letters (palette.ts) are taken and the digits ran out, so the wheelbarrow's materials use the
+ * letters left: tray 0/V/j, sand I/X/p, tyre O, rim q (hub, light) and E (rim, base). */
 export const PROP_LETTERS: Record<string, [string, number]> = {
   "1": ["steel", 0], M: ["steel", 1], m: ["steel", 2],
   "2": ["wood", 0], W: ["wood", 1], w: ["wood", 2],
@@ -49,6 +56,10 @@ export const PROP_LETTERS: Record<string, [string, number]> = {
   S: ["spark", 0], s: ["spark", 1], f: ["spark", 2],
   "9": ["earth", 0], Z: ["earth", 1], z: ["earth", 2],
   v: ["visor", 1],
+  "0": ["tray", 0], V: ["tray", 1], j: ["tray", 2],
+  I: ["sand", 0], X: ["sand", 1], p: ["sand", 2],
+  O: ["tyre", 1],
+  q: ["rim", 0], E: ["rim", 1],
 };
 
 export const isPropLetter = (ch: string): boolean => ch in PROP_LETTERS;

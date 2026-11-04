@@ -60,5 +60,10 @@ export const SITEYARD: Skin = {
     spark: ["l", "a", "a", "a"],
     earth: ["1", "N", "0", "0"],
     visor: "B",
+    // as the map's wheelbarrow (sprites/props/machines.ts): green tray, sand load, tyre k on an M rim
+    tray: ["8", "g", "G", "G"],
+    sand: ["2", "1", "N", "N"],
+    tyre: "k",
+    rim: ["c", "M", "M", "M"],
   },
 };
