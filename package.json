@@ -10,6 +10,22 @@
     "node": ">=24"
   },
   "scripts": {
+    "test": "node --test test/*.test.ts",
     "preview": "node tools/preview.ts out"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/esershnr/piksel-iskelet.git"
+  },
+  "homepage": "https://github.com/esershnr/piksel-iskelet#readme",
+  "bugs": {
+    "url": "https://github.com/esershnr/piksel-iskelet/issues"
+  },
+  "keywords": [
+    "pixel-art",
+    "sprites",
+    "animation",
+    "skeleton",
+    "skins"
+  ]
 }
